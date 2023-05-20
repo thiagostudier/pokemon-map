@@ -1,5 +1,3 @@
-console.log(collisions)
-
 /** Bloco do canvas */
 const canvas = document.querySelector('canvas')
 
@@ -9,7 +7,42 @@ const context = canvas.getContext('2d')
 /** Setar as dimensões do mapa */
 canvas.width = 1024
 canvas.height = 576
-context.fillRect(0, 0, canvas.width, canvas.height)
+
+/** Tratar as colisões */
+const collisionsMap = []
+for (let i = 0; i < collisions.length; i += 70) {
+  collisionsMap.push(collisions.slice(i, 70 + i))
+}
+
+/** Classe de limites */
+class Boundary {
+  static width = 48
+  static height = 48
+  constructor({ position }) {
+    this.position = position
+    this.width = 48
+    this.height = 48
+  }
+
+  draw() {
+    context.fillStyle = 'red'
+    context.fillRect(this.position.x, this.position.y, this.width, this.height)
+  }
+}
+
+/** Offset */
+const offset = {
+  x: -952, 
+  y: -550
+}
+
+const boundaries = []
+collisionsMap.forEach((row, x) => {
+  row.forEach((symbol, y) => {
+    if(symbol === 1025)
+      boundaries.push(new Boundary({ position: { x: x * Boundary.width + offset.x, y: y * Boundary.height + offset.y } }))
+  })
+})
 
 /** Setar a imagem do mapa */
 const image = new Image()
@@ -30,7 +63,7 @@ class Sprint {
   }
 }
 
-const background = new Sprint({ image: image, position: { x: -952, y: -550} })
+const background = new Sprint({ image: image, position: { x: offset.x, y: offset.y } })
 
 const keys = {
   w: {
@@ -51,7 +84,14 @@ const keys = {
 function animate() {
   window.requestAnimationFrame(animate)
 
+  /** Aplicar o fundo */
   background.draw()
+
+  /** Colisões */
+  boundaries.forEach(boundary => {
+    console.log(boundary)
+    boundary.draw()
+  })
   
   /** Jogador */
   context.drawImage(
