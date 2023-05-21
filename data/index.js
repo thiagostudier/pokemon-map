@@ -14,56 +14,54 @@ for (let i = 0; i < collisions.length; i += 70) {
   collisionsMap.push(collisions.slice(i, 70 + i))
 }
 
-/** Classe de limites */
-class Boundary {
-  static width = 48
-  static height = 48
-  constructor({ position }) {
-    this.position = position
-    this.width = 48
-    this.height = 48
-  }
-
-  draw() {
-    context.fillStyle = 'red'
-    context.fillRect(this.position.x, this.position.y, this.width, this.height)
-  }
-}
-
-/** Offset */
+const boundaries = []
 const offset = {
   x: -952, 
-  y: -550
+  y: -575
 }
 
-const boundaries = []
-collisionsMap.forEach((row, x) => {
-  row.forEach((symbol, y) => {
-    if(symbol === 1025)
-      boundaries.push(new Boundary({ position: { x: x * Boundary.width + offset.x, y: y * Boundary.height + offset.y } }))
+collisionsMap.forEach((row, i) => {
+  row.forEach((symbol, j) => {
+
+    if(symbol === 1025) {
+      boundaries.push(new Boundary({ position: { x: j * Boundary.width + offset.x, y: i * Boundary.height + offset.y } }))
+    }
   })
 })
 
 /** Setar a imagem do mapa */
 const image = new Image()
-image.src = './images/MyPokemonMap.png'
+image.src = './images/map.png'
+
+/** Setar a imagem do mapa, de foregrounds */
+const foregroundImage = new Image()
+foregroundImage.src = './images/foreground.png'
 
 /** Setar o jogador */
 const playerImage = new Image()
 playerImage.src = './images/playerDown.png'
 
-class Sprint {
-  constructor({ image, position, velocity }) {
-    this.image = image
-    this.position = position
-  }
+/** Dimensões do sprite */
+const widthSprite = 192
+const heightSprite = 68
 
-  draw() {
-    context.drawImage(this.image, this.position.x, this.position.y)
+/** Declarar sprite do jogador */
+const player = new Sprite({
+  position: {
+    x: canvas.width / 2 - widthSprite / 4 / 2,
+    y: canvas.height / 2 - heightSprite / 2,
+  },
+  image: playerImage,
+  frames: {
+    max: 4
   }
-}
+})
 
-const background = new Sprint({ image: image, position: { x: offset.x, y: offset.y } })
+/** Imagem do background/mapa */
+const background = new Sprite({ image: image, position: { x: offset.x, y: offset.y } })
+
+/** Imagem do foreground/mapa */
+const foreground = new Sprite({ image: foregroundImage, position: { x: offset.x, y: offset.y } })
 
 const keys = {
   w: {
@@ -80,6 +78,19 @@ const keys = {
   }
 }
 
+/** Elementos móveis */
+const movables = [background, ...boundaries, foreground]
+
+/** Retangulos de colisão */
+function rectangularCollision({ rectangle1, rectangle2 }) {
+  return (
+    rectangle1.position.x + rectangle1.width >= rectangle2.position.x &&
+    rectangle1.position.x <= rectangle2.position.x + rectangle2.width &&
+    rectangle1.position.y <= rectangle2.position.y + rectangle2.height &&
+    rectangle1.position.y + rectangle1.height >= rectangle2.position.y
+  )
+}
+
 /** Função de animação */
 function animate() {
   window.requestAnimationFrame(animate)
@@ -87,29 +98,98 @@ function animate() {
   /** Aplicar o fundo */
   background.draw()
 
+  /** Desenhar o jogador */
+  player.draw()
+
+  /** Desenhar o foreground */
+  foreground.draw()
+
   /** Colisões */
   boundaries.forEach(boundary => {
-    console.log(boundary)
     boundary.draw()
   })
-  
-  /** Jogador */
-  context.drawImage(
-    playerImage, 
-    0,
-    0,
-    playerImage.width / 4,
-    playerImage.height, 
-    canvas.width / 2 - playerImage.width / 4,
-    canvas.height / 2 - playerImage.height / 2,
-    playerImage.width / 4,
-    playerImage.height
-  )
 
-  if(keys.w.pressed && lastKey === 'w') background.position.y += 3
-  else if(keys.a.pressed && lastKey === 'a') background.position.x += 3
-  else if(keys.s.pressed && lastKey === 's') background.position.y -= 3
-  else if(keys.d.pressed && lastKey === 'd') background.position.x -= 3
+  let moving = true
+  if(keys.w.pressed && lastKey === 'w') {
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i]
+      if( rectangularCollision({
+        rectangle1: player,
+        rectangle2: {
+          ...boundary,
+          position: {
+            x: boundary.position.x,
+            y: boundary.position.y + 3
+          }
+        }
+      })) {
+        moving = false
+        break
+      }
+    }
+
+    if(moving) movables.forEach(movable => movable.position.y += 3)
+
+  } else if(keys.a.pressed && lastKey === 'a') {
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i]
+      if( rectangularCollision({
+        rectangle1: player,
+        rectangle2: {
+          ...boundary,
+          position: {
+            x: boundary.position.x + 3,
+            y: boundary.position.y
+          }
+        }
+      })) {
+        moving = false
+        break
+      }
+    }
+
+    if(moving) movables.forEach(movable => movable.position.x += 3)
+
+  } else if(keys.s.pressed && lastKey === 's') {
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i]
+      if( rectangularCollision({
+        rectangle1: player,
+        rectangle2: {
+          ...boundary,
+          position: {
+            x: boundary.position.x,
+            y: boundary.position.y - 3
+          }
+        }
+      })) {
+        moving = false
+        break
+      }
+    }
+
+    if(moving) movables.forEach(movable => movable.position.y -= 3)
+    
+  } else if(keys.d.pressed && lastKey === 'd') {
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i]
+      if( rectangularCollision({
+        rectangle1: player,
+        rectangle2: {
+          ...boundary,
+          position: {
+            x: boundary.position.x - 3,
+            y: boundary.position.y
+          }
+        }
+      })) {
+        moving = false
+        break
+      }
+    }
+
+    if(moving) movables.forEach(movable => movable.position.x -= 3)
+  }
 
 }
 
