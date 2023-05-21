@@ -1,49 +1,67 @@
 /** Bloco do canvas */
-const canvas = document.querySelector('canvas')
+const canvas = document.querySelector("canvas");
 
 /** Contexto do canvas */
-const context = canvas.getContext('2d')
+const context = canvas.getContext("2d");
 
 /** Setar as dimensões do mapa */
-canvas.width = 1024
-canvas.height = 576
+canvas.width = 1024;
+canvas.height = 576;
 
 /** Tratar as colisões */
-const collisionsMap = []
+const collisionsMap = [];
 for (let i = 0; i < collisions.length; i += 70) {
-  collisionsMap.push(collisions.slice(i, 70 + i))
+  collisionsMap.push(collisions.slice(i, 70 + i));
 }
 
-const boundaries = []
+const boundaries = [];
 const offset = {
-  x: -952, 
-  y: -575
-}
+  x: -952,
+  y: -575,
+};
 
 collisionsMap.forEach((row, i) => {
   row.forEach((symbol, j) => {
-
-    if(symbol === 1025) {
-      boundaries.push(new Boundary({ position: { x: j * Boundary.width + offset.x, y: i * Boundary.height + offset.y } }))
+    if (symbol === 1025) {
+      boundaries.push(
+        new Boundary({
+          position: {
+            x: j * Boundary.width + offset.x,
+            y: i * Boundary.height + offset.y,
+          },
+        })
+      );
     }
-  })
-})
+  });
+});
 
 /** Setar a imagem do mapa */
-const image = new Image()
-image.src = './images/map.png'
+const image = new Image();
+image.src = "./images/map.png";
 
 /** Setar a imagem do mapa, de foregrounds */
-const foregroundImage = new Image()
-foregroundImage.src = './images/foreground.png'
+const foregroundImage = new Image();
+foregroundImage.src = "./images/foreground.png";
 
-/** Setar o jogador */
-const playerImage = new Image()
-playerImage.src = './images/playerDown.png'
+/** Jogador cima */
+const playerUpImage = new Image();
+playerUpImage.src = "./images/playerUp.png";
+
+/** Jogador direita */
+const playerRightImage = new Image();
+playerRightImage.src = "./images/playerRight.png";
+
+/** Jogador esquerda */
+const playerLeftImage = new Image();
+playerLeftImage.src = "./images/playerLeft.png";
+
+/** Jogador baixo */
+const playerDownImage = new Image();
+playerDownImage.src = "./images/playerDown.png";
 
 /** Dimensões do sprite */
-const widthSprite = 192
-const heightSprite = 68
+const widthSprite = 192;
+const heightSprite = 68;
 
 /** Declarar sprite do jogador */
 const player = new Sprite({
@@ -51,35 +69,47 @@ const player = new Sprite({
     x: canvas.width / 2 - widthSprite / 4 / 2,
     y: canvas.height / 2 - heightSprite / 2,
   },
-  image: playerImage,
+  image: playerDownImage,
   frames: {
-    max: 4
-  }
-})
+    max: 4,
+  },
+  sprites: {
+    up: playerUpImage,
+    down: playerDownImage,
+    right: playerRightImage,
+    left: playerLeftImage,
+  },
+});
 
 /** Imagem do background/mapa */
-const background = new Sprite({ image: image, position: { x: offset.x, y: offset.y } })
+const background = new Sprite({
+  image: image,
+  position: { x: offset.x, y: offset.y },
+});
 
 /** Imagem do foreground/mapa */
-const foreground = new Sprite({ image: foregroundImage, position: { x: offset.x, y: offset.y } })
+const foreground = new Sprite({
+  image: foregroundImage,
+  position: { x: offset.x, y: offset.y },
+});
 
 const keys = {
   w: {
-    pressed: false
+    pressed: false,
   },
   a: {
-    pressed: false
+    pressed: false,
   },
   s: {
-    pressed: false
+    pressed: false,
   },
   d: {
-    pressed: false
-  }
-}
+    pressed: false,
+  },
+};
 
 /** Elementos móveis */
-const movables = [background, ...boundaries, foreground]
+const movables = [background, ...boundaries, foreground];
 
 /** Retangulos de colisão */
 function rectangularCollision({ rectangle1, rectangle2 }) {
@@ -88,163 +118,176 @@ function rectangularCollision({ rectangle1, rectangle2 }) {
     rectangle1.position.x <= rectangle2.position.x + rectangle2.width &&
     rectangle1.position.y <= rectangle2.position.y + rectangle2.height &&
     rectangle1.position.y + rectangle1.height >= rectangle2.position.y
-  )
+  );
 }
 
 /** Função de animação */
 function animate() {
-  window.requestAnimationFrame(animate)
+  window.requestAnimationFrame(animate);
 
   /** Aplicar o fundo */
-  background.draw()
+  background.draw();
 
   /** Desenhar o jogador */
-  player.draw()
+  player.draw();
 
   /** Desenhar o foreground */
-  foreground.draw()
+  foreground.draw();
 
   /** Colisões */
-  boundaries.forEach(boundary => {
-    boundary.draw()
-  })
+  boundaries.forEach((boundary) => {
+    boundary.draw();
+  });
 
-  let moving = true
-  if(keys.w.pressed && lastKey === 'w') {
+  let moving = true;
+  player.moving = false;
+  if (keys.w.pressed && lastKey === "w") {
+    player.moving = true;
+    player.image = player.sprites.up;
     for (let i = 0; i < boundaries.length; i++) {
-      const boundary = boundaries[i]
-      if( rectangularCollision({
-        rectangle1: player,
-        rectangle2: {
-          ...boundary,
-          position: {
-            x: boundary.position.x,
-            y: boundary.position.y + 3
-          }
-        }
-      })) {
-        moving = false
-        break
+      const boundary = boundaries[i];
+      if (
+        rectangularCollision({
+          rectangle1: player,
+          rectangle2: {
+            ...boundary,
+            position: {
+              x: boundary.position.x,
+              y: boundary.position.y + 3,
+            },
+          },
+        })
+      ) {
+        moving = false;
+        break;
       }
     }
 
-    if(moving) movables.forEach(movable => movable.position.y += 3)
-
-  } else if(keys.a.pressed && lastKey === 'a') {
+    if (moving) movables.forEach((movable) => (movable.position.y += 3));
+  } else if (keys.a.pressed && lastKey === "a") {
+    player.moving = true;
+    player.image = player.sprites.left;
     for (let i = 0; i < boundaries.length; i++) {
-      const boundary = boundaries[i]
-      if( rectangularCollision({
-        rectangle1: player,
-        rectangle2: {
-          ...boundary,
-          position: {
-            x: boundary.position.x + 3,
-            y: boundary.position.y
-          }
-        }
-      })) {
-        moving = false
-        break
+      const boundary = boundaries[i];
+      if (
+        rectangularCollision({
+          rectangle1: player,
+          rectangle2: {
+            ...boundary,
+            position: {
+              x: boundary.position.x + 3,
+              y: boundary.position.y,
+            },
+          },
+        })
+      ) {
+        moving = false;
+        break;
       }
     }
 
-    if(moving) movables.forEach(movable => movable.position.x += 3)
-
-  } else if(keys.s.pressed && lastKey === 's') {
+    if (moving) movables.forEach((movable) => (movable.position.x += 3));
+  } else if (keys.s.pressed && lastKey === "s") {
+    player.moving = true;
+    player.image = player.sprites.down;
     for (let i = 0; i < boundaries.length; i++) {
-      const boundary = boundaries[i]
-      if( rectangularCollision({
-        rectangle1: player,
-        rectangle2: {
-          ...boundary,
-          position: {
-            x: boundary.position.x,
-            y: boundary.position.y - 3
-          }
-        }
-      })) {
-        moving = false
-        break
+      const boundary = boundaries[i];
+      if (
+        rectangularCollision({
+          rectangle1: player,
+          rectangle2: {
+            ...boundary,
+            position: {
+              x: boundary.position.x,
+              y: boundary.position.y - 3,
+            },
+          },
+        })
+      ) {
+        moving = false;
+        break;
       }
     }
 
-    if(moving) movables.forEach(movable => movable.position.y -= 3)
-    
-  } else if(keys.d.pressed && lastKey === 'd') {
+    if (moving) movables.forEach((movable) => (movable.position.y -= 3));
+  } else if (keys.d.pressed && lastKey === "d") {
+    player.moving = true;
+    player.image = player.sprites.right;
     for (let i = 0; i < boundaries.length; i++) {
-      const boundary = boundaries[i]
-      if( rectangularCollision({
-        rectangle1: player,
-        rectangle2: {
-          ...boundary,
-          position: {
-            x: boundary.position.x - 3,
-            y: boundary.position.y
-          }
-        }
-      })) {
-        moving = false
-        break
+      const boundary = boundaries[i];
+      if (
+        rectangularCollision({
+          rectangle1: player,
+          rectangle2: {
+            ...boundary,
+            position: {
+              x: boundary.position.x - 3,
+              y: boundary.position.y,
+            },
+          },
+        })
+      ) {
+        moving = false;
+        break;
       }
     }
 
-    if(moving) movables.forEach(movable => movable.position.x -= 3)
+    if (moving) movables.forEach((movable) => (movable.position.x -= 3));
   }
-
 }
 
-animate()
+animate();
 
 /** Eventos de click */
-let lastKey = ''
-window.addEventListener('keydown', (e) => {
+let lastKey = "";
+window.addEventListener("keydown", (e) => {
   switch (e.key) {
     /** Caso clique no botão "w" ou seta para cima */
-    case 'w':
-      keys.w.pressed = true
-      lastKey = 'w'
+    case "w":
+      keys.w.pressed = true;
+      lastKey = "w";
       break;
 
     /** Caso clique no botão "a" ou seta para esquerda */
-    case 'a':
-      keys.a.pressed = true
-      lastKey = 'a'
+    case "a":
+      keys.a.pressed = true;
+      lastKey = "a";
       break;
 
     /** Caso clique no botão "s" ou seta para baixo */
-    case 's':
-      keys.s.pressed = true
-      lastKey = 's'
+    case "s":
+      keys.s.pressed = true;
+      lastKey = "s";
       break;
 
     /** Caso clique no botão "d" ou seta para direita */
-    case 'd':
-      keys.d.pressed = true
-      lastKey = 'd'
+    case "d":
+      keys.d.pressed = true;
+      lastKey = "d";
       break;
   }
-})
+});
 
-window.addEventListener('keyup', (e) => {
+window.addEventListener("keyup", (e) => {
   switch (e.key) {
     /** Caso clique no botão "w" ou seta para cima */
-    case 'w':
-      keys.w.pressed = false
+    case "w":
+      keys.w.pressed = false;
       break;
 
     /** Caso clique no botão "a" ou seta para esquerda */
-    case 'a':
-      keys.a.pressed = false
+    case "a":
+      keys.a.pressed = false;
       break;
 
     /** Caso clique no botão "s" ou seta para baixo */
-    case 's':
-      keys.s.pressed = false
+    case "s":
+      keys.s.pressed = false;
       break;
 
     /** Caso clique no botão "d" ou seta para direita */
-    case 'd':
-      keys.d.pressed = false
+    case "d":
+      keys.d.pressed = false;
       break;
   }
-})
+});
